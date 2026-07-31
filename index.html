@@ -602,6 +602,13 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
   // Manager PIN — required to edit or delete a cut. Change this to your own PIN.
   const MANAGER_PIN = '1234';
 
+  // Google Sheet database config — see the sync section further down for the Apps Script.
+  const SHEET_ID = '1079P0I4rPVycWaDbWUawSlHlRpKTr4vu9Ix26sbdh5M';
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzN5C9iLPx1bxSqamIl3OX0S7m_5cEL6x7Jexw9Tx9K2CO7sBUXnQAISqc372I_oTynnQ/exec';
+  const POLL_MS = 5000;
+  function sheetConfigured(){ return WEBAPP_URL && WEBAPP_URL.indexOf('PASTE_YOUR') !== 0; }
+  let loading = sheetConfigured(); // true until the first sheet read completes
+
   const CAT_LABEL = { pork:'Pork', beef:'Beef', chicken:'Chicken', lamb:'Lamb' };
   const CAT_COLOR = { pork:'var(--c-pork)', beef:'var(--c-beef)', chicken:'var(--c-chicken)', lamb:'var(--c-lamb)' };
   const REASONS = {
@@ -612,7 +619,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
   function hoursAgo(h){ return Date.now() - h*3600*1000; }
 
-  let state = {
+  let state = sheetConfigured() ? { items: [], transactions: [] } : {
     items: [
       { id: uid(), name:'Ribeye Steak',    category:'beef',    unit:'kg',  stock:18,  reorder:10 },
       { id: uid(), name:'Ground Beef',     category:'beef',    unit:'kg',  stock:34,  reorder:15 },
@@ -627,7 +634,8 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
     transactions: []
   };
 
-  // seed some history
+  // seed some history — only for the offline/demo fallback, never when a sheet is connected
+  if(!sheetConfigured()){
   (function seedHistory(){
     const seeds = [
       { name:'Ribeye Steak', type:'in',  qty:12, reason:'Production Yield', ref:'PO-1041', batch:'BC-0619', stockman:'R. Delos Santos', ts: hoursAgo(46) },
@@ -644,6 +652,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
     });
     state.transactions.sort((a,b)=>b.ts-a.ts);
   })();
+  }
 
   let currentType = 'in';
   let removeConfirmId = null;
@@ -727,7 +736,9 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
 
     const grid = document.getElementById('tagGrid');
     if(items.length===0){
-      grid.innerHTML = `<div class="empty-note">No cuts match your search — try a different filter, or add a new cut.</div>`;
+      grid.innerHTML = loading
+        ? `<div class="empty-note">Loading inventory from your Google Sheet…</div>`
+        : `<div class="empty-note">No cuts match your search — try a different filter, or add a new cut.</div>`;
       return;
     }
 
@@ -762,7 +773,9 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
   function renderLog(){
     const log = document.getElementById('ticketLog');
     if(state.transactions.length===0){
-      log.innerHTML = `<div class="empty-note">No movements recorded yet.</div>`;
+      log.innerHTML = loading
+        ? `<div class="empty-note">Loading activity from your Google Sheet…</div>`
+        : `<div class="empty-note">No movements recorded yet.</div>`;
       return;
     }
     log.innerHTML = state.transactions.slice(0,25).map(t=>`
@@ -1084,9 +1097,6 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
   //    Who has access: Anyone → Deploy → copy the /exec URL.
   // 4. Paste that URL into WEBAPP_URL right here, replacing the placeholder.
   // The script auto-creates two tabs the first time it runs: "Items" and "Activity".
-  const SHEET_ID = '1079P0I4rPVycWaDbWUawSlHlRpKTr4vu9Ix26sbdh5M';
-  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzN5C9iLPx1bxSqamIl3OX0S7m_5cEL6x7Jexw9Tx9K2CO7sBUXnQAISqc372I_oTynnQ/exec';
-  const POLL_MS = 5000; // how often the dashboard re-checks the sheet ("real-time" here means a 5s refresh, not an instant push — Sheets has no live push channel)
 
   /* ============ Apps Script — paste this whole block into Extensions → Apps Script ============
 
@@ -1192,8 +1202,6 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
 
   ============ end Apps Script ============ */
 
-  function sheetConfigured(){ return WEBAPP_URL && WEBAPP_URL.indexOf('PASTE_YOUR') !== 0; }
-
   function setSyncStatus(text, ok){
     const el = document.getElementById('syncStatus');
     el.textContent = text;
@@ -1220,14 +1228,19 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
             unit: t.unit, type: t.type, qty: Number(t.qty)||0, ref: t.ref, reason: t.reason,
             batch: t.batch, stockman: t.stockman, note: t.note||'', ts: Number(t.ts)||Date.now()
           })).sort((a,b)=>b.ts-a.ts);
+          loading = false;
           renderAll();
           setSyncStatus('Live · synced from Google Sheet · '+new Date().toLocaleTimeString(), true);
         } else {
+          loading = false;
+          renderAll();
           setSyncStatus('Google Sheet returned an unexpected response — check the Apps Script deployment.', false);
         }
         firstLoadDone = true;
       })
       .catch(()=>{
+        loading = false;
+        renderAll();
         setSyncStatus('Could not reach the Google Sheet — check the deployment URL and access settings.', false);
         firstLoadDone = true;
       });
