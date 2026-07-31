@@ -1098,20 +1098,35 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
 
   function getSS(){ return SpreadsheetApp.openById(SHEET_ID); }
 
-  function getTab(name, headerCols){
+  function getTab(name, headerCols, title){
     var ss = getSS();
-    var sh = ss.getSheetByName(name);
-    if(!sh){ sh = ss.insertSheet(name); }
-    if(sh.getLastRow() === 0){ sh.appendRow(headerCols); }
-    return sh;
+    var lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    try {
+      var sh = ss.getSheetByName(name);
+      if(!sh){
+        try {
+          sh = ss.insertSheet(name);
+        } catch(err){
+          sh = ss.getSheetByName(name);
+        }
+      }
+      if(sh && sh.getLastRow() === 0){
+        sh.appendRow([title || name]);
+        sh.appendRow(headerCols);
+      }
+      return sh;
+    } finally {
+      lock.releaseLock();
+    }
   }
-  function itemsSheet(){ return getTab(ITEMS_TAB, ['ID','Name','Category','Unit','Stock','Reorder']); }
-  function activitySheet(){ return getTab(ACTIVITY_TAB, ['ID','Date','Reference #','Item ID','Item','Category','Type','Quantity','Unit','Reason','Batch Code / Production Date','Stockman In-charge','Note']); }
+  function itemsSheet(){ return getTab(ITEMS_TAB, ['ID','Name','Category','Unit','Stock','Reorder'], 'ITEMS'); }
+  function activitySheet(){ return getTab(ACTIVITY_TAB, ['ID','Date','Reference #','Item ID','Item','Category','Type','Quantity','Unit','Reason','Batch Code / Production Date','Stockman In-charge','Note'], 'ACTIVITY LOG'); }
 
   function rowsToObjects(sh, keys){
     var data = sh.getDataRange().getValues();
     var out = [];
-    for (var i = 1; i < data.length; i++){
+    for (var i = 2; i < data.length; i++){
       var row = data[i];
       if (!row[0]) continue;
       var obj = {};
@@ -1123,7 +1138,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
 
   function findRowById(sh, id){
     var data = sh.getDataRange().getValues();
-    for (var i = 1; i < data.length; i++){ if (String(data[i][0]) === String(id)) return i + 1; }
+    for (var i = 2; i < data.length; i++){ if (String(data[i][0]) === String(id)) return i + 1; }
     return -1;
   }
 
