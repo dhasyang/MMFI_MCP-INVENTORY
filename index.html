@@ -489,7 +489,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
           </div>
           <div class="field">
             <label for="moveRef">Reference # <span style="color:var(--crimson)">*</span></label>
-            <input id="moveRef" type="text" placeholder="e.g. PO-1042, INV-338, ticket #12" required>
+            <input id="moveRef" type="text" placeholder="e.g. DR#001, IND#002, WS#001" required>
           </div>
           <div class="field">
             <label for="moveQty">Quantity <span style="color:var(--crimson)">*</span></label>
@@ -504,7 +504,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
           </div>
           <div class="field">
             <label for="moveBatch">Batch Code / Production Date <span style="color:var(--crimson)">*</span></label>
-            <input id="moveBatch" type="text" placeholder="e.g. BC-0731 or 2026-07-31" required>
+            <input id="moveBatch" type="text" placeholder="e.g. G3126 or MM-DD-YYYY" required>
           </div>
           <div class="field">
             <label for="moveStockman">Stockman In-charge <span style="color:var(--crimson)">*</span></label>
@@ -512,11 +512,11 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
           </div>
           <div class="field">
             <label for="moveLocation">Location <span style="color:var(--crimson)">*</span></label>
-            <input id="moveLocation" type="text" placeholder="e.g. Cold Storage 1, Cutting Room" required>
+            <input id="moveLocation" type="text" placeholder="e.g. Chiller, Freezer 1, Freezer 2" required>
           </div>
           <div class="field">
             <label for="moveNote">Note (optional)</label>
-            <textarea id="moveNote" placeholder="e.g. supplier, order #, ticket ref…"></textarea>
+            <textarea id="moveNote" placeholder="Cutting loss, Shrinkage…"></textarea>
           </div>
           <div class="form-error" id="moveError">Enter a valid quantity.</div>
           <div class="submit-row">
@@ -629,8 +629,6 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
       { id: uid(), name:'Ground Beef',     category:'beef',    unit:'kg',  stock:34,  reorder:15 },
       { id: uid(), name:'Beef Brisket',    category:'beef',    unit:'kg',  stock:9,   reorder:12 },
       { id: uid(), name:'Pork Belly',      category:'pork',    unit:'kg',  stock:22,  reorder:10 },
-      { id: uid(), name:'Bacon',           category:'pork',    unit:'kg',  stock:14,  reorder:8  },
-      { id: uid(), name:'Sausage Links',   category:'pork',    unit:'kg',  stock:16,  reorder:10 },
       { id: uid(), name:'Chicken Breast',  category:'chicken', unit:'kg',  stock:40,  reorder:20 },
       { id: uid(), name:'Chicken Wings',   category:'chicken', unit:'kg',  stock:6,   reorder:10 },
       { id: uid(), name:'Lamb Chops',      category:'lamb',    unit:'kg',  stock:11,  reorder:8  },
