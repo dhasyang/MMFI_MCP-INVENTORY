@@ -489,7 +489,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
           </div>
           <div class="field">
             <label for="moveRef">Reference # <span style="color:var(--crimson)">*</span></label>
-            <input id="moveRef" type="text" placeholder="e.g. DR#1234, INDR#0001, WS#001,FABRICATION...." required>
+            <input id="moveRef" type="text" placeholder="e.g. PO-1042, INV-338, ticket #12" required>
           </div>
           <div class="field">
             <label for="moveQty">Quantity <span style="color:var(--crimson)">*</span></label>
@@ -511,8 +511,12 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
             <input id="moveStockman" type="text" placeholder="Full name" required>
           </div>
           <div class="field">
+            <label for="moveLocation">Location <span style="color:var(--crimson)">*</span></label>
+            <input id="moveLocation" type="text" placeholder="e.g. Chiller, Freezer 1, Freezer 2" required>
+          </div>
+          <div class="field">
             <label for="moveNote">Note (optional)</label>
-            <textarea id="moveNote" placeholder="e.g. Cutting loss, shrinkage...…"></textarea>
+            <textarea id="moveNote" placeholder="e.g. supplier, order #, ticket ref…"></textarea>
           </div>
           <div class="form-error" id="moveError">Enter a valid quantity.</div>
           <div class="submit-row">
@@ -638,17 +642,17 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
   if(!sheetConfigured()){
   (function seedHistory(){
     const seeds = [
-      { name:'Ribeye Steak', type:'in',  qty:12, reason:'Production Yield', ref:'PO-1041', batch:'BC-0619', stockman:'R. Delos Santos', ts: hoursAgo(46) },
-      { name:'Chicken Breast', type:'out', qty:15, reason:'Sold', ref:'INV-2207', batch:'BC-0620', stockman:'J. Cabrera', ts: hoursAgo(30) },
-      { name:'Beef Brisket', type:'out', qty:6, reason:'Consumption', ref:'KIT-0912', batch:'BC-0621', stockman:'J. Cabrera', ts: hoursAgo(20) },
-      { name:'Pork Belly', type:'in', qty:5, reason:'Transfer from other cold storage', ref:'DR#1234', batch:'BC-0622', stockman:'R. Delos Santos', ts: hoursAgo(9) },
-      { name:'Chicken Wings', type:'out', qty:9, reason:'Sold', ref:'INV-2211', batch:'BC-0623', stockman:'M. Villareal', ts: hoursAgo(4) },
-      { name:'Ground Beef', type:'out', qty:7, reason:'Sold', ref:'INV-2213', batch:'BC-0624', stockman:'M. Villareal', ts: hoursAgo(1.2) },
-      { name:'Bacon', type:'in', qty:6, reason:'Production Yield', ref:'PO-1044', batch:'BC-0625', stockman:'R. Delos Santos', ts: hoursAgo(0.4) },
+      { name:'Ribeye Steak', type:'in',  qty:12, reason:'Production Yield', ref:'PO-1041', batch:'BC-0619', stockman:'R. Delos Santos', location:'Cold Storage 1', ts: hoursAgo(46) },
+      { name:'Chicken Breast', type:'out', qty:15, reason:'Sold', ref:'INV-2207', batch:'BC-0620', stockman:'J. Cabrera', location:'Cutting Room', ts: hoursAgo(30) },
+      { name:'Beef Brisket', type:'out', qty:6, reason:'Consumption', ref:'KIT-0912', batch:'BC-0621', stockman:'J. Cabrera', location:'Cutting Room', ts: hoursAgo(20) },
+      { name:'Pork Belly', type:'in', qty:5, reason:'Transfer from other cold storage', ref:'PO-1042', batch:'BC-0622', stockman:'R. Delos Santos', location:'Cold Storage 2', ts: hoursAgo(9) },
+      { name:'Chicken Wings', type:'out', qty:9, reason:'Sold', ref:'INV-2211', batch:'BC-0623', stockman:'M. Villareal', location:'Cold Storage 1', ts: hoursAgo(4) },
+      { name:'Ground Beef', type:'out', qty:7, reason:'Sold', ref:'INV-2213', batch:'BC-0624', stockman:'M. Villareal', location:'Cold Storage 1', ts: hoursAgo(1.2) },
+      { name:'Bacon', type:'in', qty:6, reason:'Production Yield', ref:'PO-1044', batch:'BC-0625', stockman:'R. Delos Santos', location:'Cold Storage 2', ts: hoursAgo(0.4) },
     ];
     seeds.forEach(s=>{
       const item = state.items.find(i=>i.name===s.name);
-      if(item){ state.transactions.push({ id: uid(), itemId:item.id, itemName:item.name, category:item.category, unit:item.unit, type:s.type, qty:s.qty, reason:s.reason, ref:s.ref, batch:s.batch, stockman:s.stockman, note:'', ts:s.ts }); }
+      if(item){ state.transactions.push({ id: uid(), itemId:item.id, itemName:item.name, category:item.category, unit:item.unit, type:s.type, qty:s.qty, reason:s.reason, ref:s.ref, batch:s.batch, stockman:s.stockman, location:s.location, note:'', ts:s.ts }); }
     });
     state.transactions.sort((a,b)=>b.ts-a.ts);
   })();
@@ -783,7 +787,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
         <div class="stamp ${t.type}">${t.type==='in'?'RECEIVED':'DISPATCH'}</div>
         <div class="ticket-body">
           <div class="ticket-title">${t.itemName} <span style="color:var(--ink-soft); font-weight:500;">· ${t.ref||'—'}</span></div>
-          <div class="ticket-meta">${t.reason} · Batch ${t.batch||'—'} · ${t.stockman||'—'}${t.note? ' · '+t.note : ''} · ${timeAgo(t.ts)}</div>
+          <div class="ticket-meta">${t.reason} · Batch ${t.batch||'—'} · ${t.stockman||'—'} · ${t.location||'—'}${t.note? ' · '+t.note : ''} · ${timeAgo(t.ts)}</div>
         </div>
         <div class="ticket-qty ${t.type}">${t.type==='in'?'+':'-'}${fmt(t.qty,1)} ${t.unit}</div>
       </div>
@@ -864,6 +868,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
     const reason = document.getElementById('moveReason').value;
     const batch = document.getElementById('moveBatch').value.trim();
     const stockman = document.getElementById('moveStockman').value.trim();
+    const location = document.getElementById('moveLocation').value.trim();
     const note = document.getElementById('moveNote').value.trim();
     const errEl = document.getElementById('moveError');
     const item = state.items.find(i=>i.id===itemId);
@@ -896,12 +901,18 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
       document.getElementById('moveStockman').focus();
       return;
     }
+    if(!location){
+      errEl.textContent = 'Location is required.';
+      errEl.classList.add('show');
+      document.getElementById('moveLocation').focus();
+      return;
+    }
     errEl.classList.remove('show');
 
     item.stock = currentType==='in' ? item.stock+qty : item.stock-qty;
     item.stock = Math.round(item.stock*100)/100;
 
-    const tx = { id: uid(), itemId:item.id, itemName:item.name, category:item.category, unit:item.unit, type:currentType, qty, ref, reason, batch, stockman, note, ts: Date.now() };
+    const tx = { id: uid(), itemId:item.id, itemName:item.name, category:item.category, unit:item.unit, type:currentType, qty, ref, reason, batch, stockman, location, note, ts: Date.now() };
     state.transactions.unshift(tx);
     syncAddTransaction(tx, item.stock);
 
@@ -909,6 +920,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
     document.getElementById('moveRef').value='';
     document.getElementById('moveBatch').value='';
     document.getElementById('moveStockman').value='';
+    document.getElementById('moveLocation').value='';
     document.getElementById('moveNote').value='';
 
     renderAll();
@@ -1056,13 +1068,13 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
 
   // ===== CSV export =====
   function toCSV(){
-    const rows = [['Date','Time','Reference #','Item','Category','Type','Quantity','Unit','Reason','Batch Code / Production Date','Stockman In-charge','Note']];
+    const rows = [['Date','Time','Reference #','Item','Category','Type','Quantity','Unit','Reason','Batch Code / Production Date','Stockman In-charge','Location','Note']];
     state.transactions.slice().sort((a,b)=>a.ts-b.ts).forEach(t=>{
       const d = new Date(t.ts);
       rows.push([
         d.toLocaleDateString(), d.toLocaleTimeString(), t.ref||'',
         t.itemName, CAT_LABEL[t.category]||t.category, t.type==='in'?'In':'Out',
-        t.qty, t.unit, t.reason, t.batch||'', t.stockman||'', t.note||''
+        t.qty, t.unit, t.reason, t.batch||'', t.stockman||'', t.location||'', t.note||''
       ]);
     });
     return rows.map(r=>r.map(v=>{
@@ -1103,12 +1115,13 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
   const SHEET_ID = '1079P0I4rPVycWaDbWUawSlHlRpKTr4vu9Ix26sbdh5M';
   const ITEMS_TAB = 'Items';
   const ACTIVITY_TAB = 'Activity';
-  const ITEM_COLS = ['id','name','category','unit','stock','reorder'];
-  const TX_COLS = ['id','ts','ref','itemId','itemName','category','type','qty','unit','reason','batch','stockman','note'];
+
+  const ITEMS_HEADER_ROWS = 2;      // Items: row1 title, row2 headers, data from row 3
+  const ACTIVITY_HEADER_ROWS = 3;   // Activity: row1 company, row2 subtitle, row3 headers, data from row 4
 
   function getSS(){ return SpreadsheetApp.openById(SHEET_ID); }
 
-  function getTab(name, headerCols, title){
+  function getTab(name, headerCols, titleRows){
     var ss = getSS();
     var lock = LockService.getScriptLock();
     lock.waitLock(10000);
@@ -1118,25 +1131,27 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
         try {
           sh = ss.insertSheet(name);
         } catch(err){
+          // another simultaneous request created it first — just use that one
           sh = ss.getSheetByName(name);
         }
       }
       if(sh && sh.getLastRow() === 0){
-        sh.appendRow([title || name]);
-        sh.appendRow(headerCols);
+        (titleRows || [name]).forEach(function(r){ sh.appendRow([r]); }); // title/spacer row(s)
+        sh.appendRow(headerCols);                                          // column headers row
+        // data starts on the row right after
       }
       return sh;
     } finally {
       lock.releaseLock();
     }
   }
-  function itemsSheet(){ return getTab(ITEMS_TAB, ['ID','Name','Category','Unit','Stock','Reorder'], 'ITEMS'); }
-  function activitySheet(){ return getTab(ACTIVITY_TAB, ['ID','Date','Reference #','Item ID','Item','Category','Type','Quantity','Unit','Reason','Batch Code / Production Date','Stockman In-charge','Note'], 'ACTIVITY LOG'); }
+  function itemsSheet(){ return getTab(ITEMS_TAB, ['ID','Name','Category','Unit','Stock','Reorder'], ['ITEMS']); }
+  function activitySheet(){ return getTab(ACTIVITY_TAB, ['ID','Date','Reference #','Item ID','Item','Category','Type','Quantity','Unit','Reason','Batch Code / Production Date','Stockman In-charge','Note','Location'], ['M. MONTESCLAROS FARMS, INC. - SAYRE HIGHWAY', 'MEAT CUTTING PLANT INVENTORY AND ACTIVITY LOG']); }
 
-  function rowsToObjects(sh, keys){
+  function rowsToObjects(sh, keys, headerRows){
     var data = sh.getDataRange().getValues();
     var out = [];
-    for (var i = 2; i < data.length; i++){
+    for (var i = headerRows; i < data.length; i++){
       var row = data[i];
       if (!row[0]) continue;
       var obj = {};
@@ -1146,15 +1161,15 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
     return out;
   }
 
-  function findRowById(sh, id){
+  function findRowById(sh, id, headerRows){
     var data = sh.getDataRange().getValues();
-    for (var i = 2; i < data.length; i++){ if (String(data[i][0]) === String(id)) return i + 1; }
+    for (var i = headerRows; i < data.length; i++){ if (String(data[i][0]) === String(id)) return i + 1; }
     return -1;
   }
 
   function doGet(e){
-    var items = rowsToObjects(itemsSheet(), ['id','name','category','unit','stock','reorder']);
-    var raw = rowsToObjects(activitySheet(), ['id','ts','ref','itemId','itemName','category','type','qty','unit','reason','batch','stockman','note']);
+    var items = rowsToObjects(itemsSheet(), ['id','name','category','unit','stock','reorder'], ITEMS_HEADER_ROWS);
+    var raw = rowsToObjects(activitySheet(), ['id','ts','ref','itemId','itemName','category','type','qty','unit','reason','batch','stockman','note','location'], ACTIVITY_HEADER_ROWS);
     var transactions = raw.map(function(t){
       var d = t.ts instanceof Date ? t.ts.getTime() : new Date(t.ts).getTime();
       return Object.assign({}, t, { ts: d });
@@ -1177,21 +1192,21 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
   }
   function updateItem(item){
     var sh = itemsSheet();
-    var row = findRowById(sh, item.id);
+    var row = findRowById(sh, item.id, ITEMS_HEADER_ROWS);
     if (row > 0) sh.getRange(row, 1, 1, 6).setValues([[item.id, item.name, item.category, item.unit, item.stock, item.reorder]]);
     return out({ status:'ok' });
   }
   function deleteItem(id){
     var sh = itemsSheet();
-    var row = findRowById(sh, id);
+    var row = findRowById(sh, id, ITEMS_HEADER_ROWS);
     if (row > 0) sh.deleteRow(row);
     return out({ status:'ok' });
   }
   function addTransaction(tx, newStock){
-    activitySheet().appendRow([tx.id, new Date(tx.ts), tx.ref, tx.itemId, tx.itemName, tx.category, tx.type, tx.qty, tx.unit, tx.reason, tx.batch, tx.stockman, tx.note || '']);
+    activitySheet().appendRow([tx.id, new Date(tx.ts), tx.ref, tx.itemId, tx.itemName, tx.category, tx.type, tx.qty, tx.unit, tx.reason, tx.batch, tx.stockman, tx.note || '', tx.location || '']);
     if (newStock !== undefined && tx.itemId){
       var sh = itemsSheet();
-      var row = findRowById(sh, tx.itemId);
+      var row = findRowById(sh, tx.itemId, ITEMS_HEADER_ROWS);
       if (row > 0) sh.getRange(row, 5).setValue(newStock);
     }
     return out({ status:'ok' });
@@ -1226,7 +1241,7 @@ button.ghost:hover{ background: rgba(0,0,0,.05); }
           state.transactions = (data.transactions||[]).map(t=>({
             id: String(t.id), itemId: String(t.itemId), itemName: t.itemName, category: t.category,
             unit: t.unit, type: t.type, qty: Number(t.qty)||0, ref: t.ref, reason: t.reason,
-            batch: t.batch, stockman: t.stockman, note: t.note||'', ts: Number(t.ts)||Date.now()
+            batch: t.batch, stockman: t.stockman, location: t.location, note: t.note||'', ts: Number(t.ts)||Date.now()
           })).sort((a,b)=>b.ts-a.ts);
           loading = false;
           renderAll();
